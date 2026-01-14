@@ -1,6 +1,6 @@
 {
   "name": "@json-render/core",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "license": "Apache-2.0",
   "description": "JSON becomes real things. Define your catalog, register your components, let AI generate.",
   "keywords": [
@@ -22,6 +22,9 @@
   "homepage": "https://github.com/vercel-labs/json-render#readme",
   "bugs": {
     "url": "https://github.com/vercel-labs/json-render/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
