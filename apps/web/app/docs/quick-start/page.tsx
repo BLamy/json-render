@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Code } from "@/components/code";
 
 export const metadata = {
@@ -201,12 +200,6 @@ export default function Page() {
           </Link>
         </li>
       </ul>
-
-      <div className="flex gap-3 mt-12">
-        <Button size="sm" asChild>
-          <Link href="/docs/catalog">Learn about Catalogs</Link>
-        </Button>
-      </div>
     </article>
   );
 }

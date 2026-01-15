@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Code } from "@/components/code";
+import { PackageInstall } from "@/components/package-install";
 
 export const metadata = {
   title: "Installation | json-render",
@@ -15,19 +13,7 @@ export default function InstallationPage() {
       </p>
 
       <h2 className="text-xl font-semibold mt-12 mb-4">Install packages</h2>
-      <Code lang="bash">npm install @json-render/core @json-render/react</Code>
-
-      <p className="text-sm text-muted-foreground mb-4">
-        Or with other package managers:
-      </p>
-      <Code lang="bash">{`# pnpm
-pnpm add @json-render/core @json-render/react
-
-# yarn
-yarn add @json-render/core @json-render/react
-
-# bun
-bun add @json-render/core @json-render/react`}</Code>
+      <PackageInstall packages="@json-render/core @json-render/react" />
 
       <h2 className="text-xl font-semibold mt-12 mb-4">Peer Dependencies</h2>
       <p className="text-sm text-muted-foreground mb-4">
@@ -41,20 +27,14 @@ bun add @json-render/core @json-render/react`}</Code>
           <code className="text-foreground">zod</code> ^4.0.0
         </li>
       </ul>
-      <Code lang="bash">npm install react zod</Code>
+      <PackageInstall packages="react zod" />
 
       <h2 className="text-xl font-semibold mt-12 mb-4">For AI Integration</h2>
       <p className="text-sm text-muted-foreground mb-4">
         To use json-render with AI models, you&apos;ll also need the Vercel AI
         SDK:
       </p>
-      <Code lang="bash">npm install ai</Code>
-
-      <div className="flex gap-3 mt-12">
-        <Button size="sm" asChild>
-          <Link href="/docs/quick-start">Quick Start</Link>
-        </Button>
-      </div>
+      <PackageInstall packages="ai" />
     </article>
   );
 }

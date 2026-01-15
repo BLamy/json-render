@@ -61,7 +61,7 @@ export function DocsMobileNav() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger className="lg:hidden sticky top-[calc(3.5rem+1px)] z-40 w-full px-6 py-3 bg-background/80 backdrop-blur-sm border-b border-border flex items-center justify-between">
+      <SheetTrigger className="lg:hidden sticky top-[calc(3.5rem+1px)] z-40 w-full px-6 py-3 bg-background/80 backdrop-blur-sm border-b border-border flex items-center justify-between focus:outline-none">
         <div className="text-sm font-medium">{currentPage?.title}</div>
         <div className="w-8 h-8 flex items-center justify-center">
           <List className="h-4 w-4 text-muted-foreground" />
