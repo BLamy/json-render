@@ -2,8 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Order, CreateOrder, UpdateOrder } from "../schemas";
-
-const API_BASE = "/api/sync";
+import { API_BASE } from "../api";
 
 // Extended order type with joined fields
 export interface OrderWithDetails extends Order {

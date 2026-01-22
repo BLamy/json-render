@@ -2,8 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User, CreateUser, UpdateUser } from "../schemas";
-
-const API_BASE = "/api/sync";
+import { API_BASE } from "../api";
 
 /**
  * Fetch all users

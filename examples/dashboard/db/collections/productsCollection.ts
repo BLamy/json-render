@@ -2,8 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Product, CreateProduct, UpdateProduct } from "../schemas";
-
-const API_BASE = "/api/sync";
+import { API_BASE } from "../api";
 
 /**
  * Fetch all products

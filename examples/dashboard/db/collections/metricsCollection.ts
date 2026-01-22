@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-
-const API_BASE = "/api/sync";
+import { API_BASE } from "../api";
 
 /**
  * Dashboard metrics type

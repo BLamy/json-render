@@ -6,7 +6,14 @@
  */
 
 const CACHE_NAME = "dashboard-v1";
-const API_PREFIX = "/api/sync";
+
+// Detect basePath from service worker scope
+// e.g., /json-render/ -> basePath = "/json-render"
+const scope = self.registration?.scope || self.location.origin + "/";
+const scopePath = new URL(scope).pathname.replace(/\/$/, "");
+const API_PREFIX = scopePath + "/api/sync";
+
+console.log("[SW] Scope:", scope, "API prefix:", API_PREFIX);
 
 // PGLite will be initialized via message from main thread
 let dbReady = false;
@@ -37,7 +44,7 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Only intercept /api/sync/* requests
+  // Only intercept /api/sync/* requests (with basePath prefix)
   if (url.pathname.startsWith(API_PREFIX)) {
     console.log("[SW] Intercepting:", url.pathname);
     event.respondWith(handleAPIRequest(event.request));

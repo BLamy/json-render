@@ -10,6 +10,9 @@ import {
   setServiceWorkerReady,
 } from "../store/slices/uiSlice";
 
+// Get basePath from environment variable (set during build)
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 /**
  * Root providers component
  * Sets up Redux store, TanStack Query, and database initialization
@@ -20,9 +23,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function init() {
       try {
-        // Register service worker
+        // Register service worker with correct scope
         if ("serviceWorker" in navigator) {
-          const registration = await navigator.serviceWorker.register("/sw.js");
+          const swPath = `${basePath}/sw.js`;
+          const swScope = `${basePath}/`;
+          const registration = await navigator.serviceWorker.register(swPath, {
+            scope: swScope,
+          });
           console.log("[App] Service worker registered:", registration.scope);
 
           // Wait for service worker to be ready
