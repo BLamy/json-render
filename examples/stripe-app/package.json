@@ -1,0 +1,26 @@
+{
+  "name": "com.example.json-render-demo",
+  "version": "0.0.1",
+  "description": "Test",
+  "private": true,
+  "license": "~~proprietary~~",
+  "type": "module",
+  "dependencies": {
+    "@json-render/core": "^0.4.0",
+    "@json-render/react": "^0.4.0",
+    "@stripe/ui-extension-sdk": "^9.1.0",
+    "stripe": "^13.11.0"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "lint": "eslint src --max-warnings 0",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@stripe/ui-extension-tools": "^0.0.1",
+    "eslint": "^9.39.0"
+  }
+}
