@@ -1,5 +1,12 @@
 # @json-render/remotion
 
+## 0.5.1
+
+### Patch Changes
+
+- d9a4efd: Prevent rendering errors from crashing the application. Added error boundaries to all renderers so a single bad component silently disappears instead of causing a white-screen-of-death. Fixed Select and Radio components to handle non-string option values from AI output.
+  - @json-render/core@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
