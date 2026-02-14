@@ -4,6 +4,146 @@ export const metadata = { title: "Changelog" }
 
 Notable changes and updates to json-render.
 
+## v0.6.0
+
+February 2026
+
+### New: Chat Mode (Inline GenUI)
+
+json-render now supports two generation modes: **Generate** (JSONL-only, the default) and **Chat** (text + JSONL inline). Chat mode lets the AI respond conversationally with embedded UI specs, ideal for chatbots and copilot experiences.
+
+```typescript
+// Generate mode (default) — AI outputs only JSONL
+const prompt = catalog.prompt();
+
+// Chat mode — AI outputs text + JSONL inline
+const chatPrompt = catalog.prompt({ mode: "chat" });
+```
+
+On the server, `pipeJsonRender()` separates text from JSONL patches in a mixed stream:
+
+```typescript
+import { pipeJsonRender } from "@json-render/core";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
+
+const stream = createUIMessageStream({
+  execute: async ({ writer }) => {
+    writer.merge(pipeJsonRender(result.toUIMessageStream()));
+  },
+});
+return createUIMessageStreamResponse({ stream });
+```
+
+On the client, `useJsonRenderMessage` extracts the spec and text from message parts:
+
+```tsx
+import { useJsonRenderMessage } from "@json-render/react";
+
+function ChatMessage({ message }) {
+  const { spec, text, hasSpec } = useJsonRenderMessage(message.parts);
+  return (
+    <div>
+      {text && <Markdown>{text}</Markdown>}
+      {hasSpec && <Renderer spec={spec} registry={registry} />}
+    </div>
+  );
+}
+```
+
+### New: AI SDK Integration
+
+First-class Vercel AI SDK support with typed data parts and stream utilities.
+
+- `SpecDataPart` type for `data-spec` stream parts (patch, flat, nested payloads)
+- `SPEC_DATA_PART` / `SPEC_DATA_PART_TYPE` constants for type-safe part filtering
+- `createJsonRenderTransform()` low-level TransformStream for custom pipelines
+- `createMixedStreamParser()` for parsing mixed text + JSONL streams
+
+### New: Two-Way Binding
+
+Props can now use `$bindState` and `$bindItem` expressions for two-way data binding. The renderer resolves bindings and passes a `bindings` map to components, enabling write-back to state without custom `valuePath` props.
+
+```json
+{
+  "type": "Input",
+  "props": { "label": "Email", "value": { "$bindState": "/form/email" } }
+}
+```
+
+```tsx
+import { useBoundProp } from "@json-render/react";
+
+Input: ({ props, bindings }) => {
+  const [value, setValue] = useBoundProp<string>(props.value, bindings?.value);
+  return <input value={value ?? ""} onChange={(e) => setValue(e.target.value)} />;
+}
+```
+
+### New: Expression-Based Props and Visibility
+
+All dynamic expressions now use structured `$state`, `$item`, and `$index` objects instead of string token rewriting. This is simpler, more explicit, and works for both props and visibility conditions.
+
+**Props:**
+
+```json
+{ "title": { "$state": "/user/name" } }
+{ "label": { "$item": "title" } }
+{ "position": { "$index": true } }
+```
+
+**Visibility:**
+
+```json
+{ "$state": "/isAdmin" }
+{ "$state": "/role", "eq": "admin" }
+[{ "$state": "/isAdmin" }, { "$state": "/feature" }]
+{ "$or": [{ "$state": "/roleA" }, { "$state": "/roleB" }] }
+{ "$item": "isActive" }
+{ "$index": true, "gt": 0 }
+```
+
+Comparison operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `not`.
+
+### New: React Chat Hooks
+
+- `useChatUI()` — full chat hook with message history, streaming, and spec extraction
+- `useJsonRenderMessage()` — extract spec + text from a message's parts array
+- `buildSpecFromParts()` / `getTextFromParts()` — utilities for working with AI SDK message parts
+- `useBoundProp()` — two-way binding hook for `$bindState` / `$bindItem`
+
+### New: Chat Example
+
+Full-featured chat example (`examples/chat`) with AI agent, tool calls (crypto, GitHub, Hacker News, weather, search), theme toggle, and streaming inline UI generation.
+
+### Improved: Renderer Performance
+
+- `ElementRenderer` is now `React.memo`'d for better performance with repeat lists
+- `emit` is always defined (never `undefined`)
+- Repeat scope passes the actual item object, eliminating string token rewriting
+
+### Improved: Utilities
+
+- `applySpecPatch()` — typed wrapper for applying a single patch to a Spec
+- `nestedToFlat()` — convert nested tree specs to flat format
+- `resolveBindings()` / `resolveActionParam()` — resolve binding paths and action params
+
+### Breaking Changes
+
+- `{ $path }` and `{ path }` replaced by `{ $state }`, `{ $item }`, `{ $index }` in props
+- Visibility: `{ path }` -> `{ $state }`, `{ and/or/not }` -> `{ $and/$or }` with `not` as operator flag
+- `DynamicValue`: `{ path: string }` -> `{ $state: string }`
+- `repeat.path` -> `repeat.statePath`
+- Action params: `path` -> `statePath` in setState action
+- `actionHandlers` -> `handlers` on `JSONUIProvider` / `ActionProvider`
+- `AuthState` and `{ auth }` visibility conditions removed (model auth as regular state)
+- Legacy catalog API removed: `createCatalog`, `generateCatalogPrompt`, `generateSystemPrompt`
+- React exports removed: `createRendererFromCatalog`, `rewriteRepeatTokens`
+- Codegen: `traverseTree` -> `traverseSpec`
+
+See the [Migration Guide](/docs/migration) for detailed upgrade instructions.
+
+---
+
 ## v0.5.0
 
 February 2026
