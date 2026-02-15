@@ -1,5 +1,12 @@
 # @json-render/codegen
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [ea97aff]
+  - @json-render/core@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes
