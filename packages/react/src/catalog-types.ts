@@ -26,6 +26,53 @@ export type SetState = (
 // =============================================================================
 
 /**
+ * Handle returned by the `on()` function for a specific event.
+ * Provides metadata about the event binding and a method to fire it.
+ *
+ * @example
+ * ```ts
+ * const press = on("press");
+ * if (press.shouldPreventDefault) e.preventDefault();
+ * press.emit();
+ * ```
+ */
+export interface EventHandle {
+  /** Fire the event (resolve action bindings) */
+  emit: () => void;
+  /** Whether any binding requested preventDefault */
+  shouldPreventDefault: boolean;
+  /** Whether any handler is bound to this event */
+  bound: boolean;
+}
+
+/**
+ * Catalog-agnostic base type for component render function arguments.
+ * Use this when building reusable component libraries (e.g. `@json-render/shadcn`)
+ * that are not tied to a specific catalog.
+ *
+ * @example
+ * ```ts
+ * const Card = ({ props, children }: BaseComponentProps<{ title?: string }>) => (
+ *   <div>{props.title}{children}</div>
+ * );
+ * ```
+ */
+export interface BaseComponentProps<P = Record<string, unknown>> {
+  props: P;
+  children?: ReactNode;
+  /** Simple event emitter (shorthand). Fires the event and returns void. */
+  emit: (event: string) => void;
+  /** Get an event handle with metadata. Use when you need shouldPreventDefault or bound checks. */
+  on: (event: string) => EventHandle;
+  /**
+   * Two-way binding paths resolved from `$bindState` / `$bindItem` expressions.
+   * Maps prop name → absolute state path for write-back.
+   */
+  bindings?: Record<string, string>;
+  loading?: boolean;
+}
+
+/**
  * Context passed to component render functions
  * @example
  * const Button: ComponentFn<typeof catalog, 'Button'> = (ctx) => {
@@ -35,18 +82,7 @@ export type SetState = (
 export interface ComponentContext<
   C extends Catalog,
   K extends keyof InferCatalogComponents<C>,
-> {
-  props: InferComponentProps<C, K>;
-  children?: ReactNode;
-  /** Emit a named event. The renderer resolves the event to an action binding from the element's `on` field. */
-  emit: (event: string) => void;
-  /**
-   * Two-way binding paths resolved from `$bindState` / `$bindItem` expressions.
-   * Maps prop name → absolute state path for write-back.
-   */
-  bindings?: Record<string, string>;
-  loading?: boolean;
-}
+> extends BaseComponentProps<InferComponentProps<C, K>> {}
 
 /**
  * Component render function type for React
@@ -104,3 +140,15 @@ export type ActionFn<
 export type Actions<C extends Catalog> = {
   [K in keyof InferCatalogActions<C>]: ActionFn<C, K>;
 };
+
+/**
+ * True when the catalog declares at least one action, false otherwise.
+ * Used by defineRegistry to conditionally require the `actions` field.
+ */
+export type CatalogHasActions<C extends Catalog> = [
+  InferCatalogActions<C>,
+] extends [never]
+  ? false
+  : [keyof InferCatalogActions<C>] extends [never]
+    ? false
+    : true;

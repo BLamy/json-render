@@ -1010,11 +1010,48 @@ export function createJsonRenderTransform(): TransformStream<
   let buffering = false;
   // Whether we are inside a ```spec fence
   let inSpecFence = false;
+  // Whether we are currently inside a text block (between text-start/text-end).
+  // Used to split text blocks around spec data so the AI SDK creates separate
+  // text parts, preserving interleaving of prose and UI in message.parts.
+  let inTextBlock = false;
+  let textIdCounter = 0;
+
+  /** Close the current text block if one is open. */
+  function closeTextBlock(
+    controller: TransformStreamDefaultController<StreamChunk>,
+  ) {
+    if (inTextBlock) {
+      controller.enqueue({ type: "text-end", id: currentTextId });
+      inTextBlock = false;
+    }
+  }
+
+  /** Ensure a text block is open, starting a new one if needed. */
+  function ensureTextBlock(
+    controller: TransformStreamDefaultController<StreamChunk>,
+  ) {
+    if (!inTextBlock) {
+      textIdCounter++;
+      currentTextId = String(textIdCounter);
+      controller.enqueue({ type: "text-start", id: currentTextId });
+      inTextBlock = true;
+    }
+  }
+
+  /** Emit a text-delta, opening a text block first if necessary. */
+  function emitTextDelta(
+    delta: string,
+    controller: TransformStreamDefaultController<StreamChunk>,
+  ) {
+    ensureTextBlock(controller);
+    controller.enqueue({ type: "text-delta", id: currentTextId, delta });
+  }
 
   function emitPatch(
     patch: SpecStreamLine,
     controller: TransformStreamDefaultController<StreamChunk>,
   ) {
+    closeTextBlock(controller);
     controller.enqueue({
       type: SPEC_DATA_PART_TYPE,
       data: { type: "patch", patch },
@@ -1046,19 +1083,11 @@ export function createJsonRenderTransform(): TransformStream<
         emitPatch(patch, controller);
       } else {
         // Was buffered but isn't JSONL — flush as text
-        controller.enqueue({
-          type: "text-delta",
-          id: currentTextId,
-          delta: lineBuffer,
-        });
+        emitTextDelta(lineBuffer, controller);
       }
     } else {
       // Whitespace-only buffer — forward as-is (preserves blank lines)
-      controller.enqueue({
-        type: "text-delta",
-        id: currentTextId,
-        delta: lineBuffer,
-      });
+      emitTextDelta(lineBuffer, controller);
     }
     lineBuffer = "";
     buffering = false;
@@ -1092,11 +1121,7 @@ export function createJsonRenderTransform(): TransformStream<
     // --- Outside fence: heuristic mode ---
     if (!trimmed) {
       // Empty line — forward for markdown paragraph breaks
-      controller.enqueue({
-        type: "text-delta",
-        id: currentTextId,
-        delta: "\n",
-      });
+      emitTextDelta("\n", controller);
       return;
     }
 
@@ -1104,11 +1129,7 @@ export function createJsonRenderTransform(): TransformStream<
     if (patch) {
       emitPatch(patch, controller);
     } else {
-      controller.enqueue({
-        type: "text-delta",
-        id: currentTextId,
-        delta: line + "\n",
-      });
+      emitTextDelta(line + "\n", controller);
     }
   }
 
@@ -1116,14 +1137,19 @@ export function createJsonRenderTransform(): TransformStream<
     transform(chunk, controller) {
       switch (chunk.type) {
         case "text-start": {
-          currentTextId = (chunk as { id: string }).id;
+          const id = (chunk as { id: string }).id;
+          const idNum = parseInt(id, 10);
+          if (!isNaN(idNum) && idNum >= textIdCounter) {
+            textIdCounter = idNum;
+          }
+          currentTextId = id;
+          inTextBlock = true;
           controller.enqueue(chunk);
           break;
         }
 
         case "text-delta": {
           const delta = chunk as { id: string; delta: string };
-          currentTextId = delta.id;
           const text = delta.delta;
 
           for (let i = 0; i < text.length; i++) {
@@ -1138,11 +1164,7 @@ export function createJsonRenderTransform(): TransformStream<
               } else {
                 // Outside fence, emit newline; inside fence, swallow it
                 if (!inSpecFence) {
-                  controller.enqueue({
-                    type: "text-delta",
-                    id: currentTextId,
-                    delta: "\n",
-                  });
+                  emitTextDelta("\n", controller);
                 }
               }
             } else if (lineBuffer.length === 0 && !buffering) {
@@ -1152,20 +1174,12 @@ export function createJsonRenderTransform(): TransformStream<
                 buffering = true;
                 lineBuffer += ch;
               } else {
-                controller.enqueue({
-                  type: "text-delta",
-                  id: currentTextId,
-                  delta: ch,
-                });
+                emitTextDelta(ch, controller);
               }
             } else if (buffering) {
               lineBuffer += ch;
             } else {
-              controller.enqueue({
-                type: "text-delta",
-                id: currentTextId,
-                delta: ch,
-              });
+              emitTextDelta(ch, controller);
             }
           }
           break;
@@ -1173,7 +1187,10 @@ export function createJsonRenderTransform(): TransformStream<
 
         case "text-end": {
           flushBuffer(controller);
-          controller.enqueue(chunk);
+          if (inTextBlock) {
+            controller.enqueue({ type: "text-end", id: currentTextId });
+            inTextBlock = false;
+          }
           break;
         }
 
@@ -1186,6 +1203,7 @@ export function createJsonRenderTransform(): TransformStream<
 
     flush(controller) {
       flushBuffer(controller);
+      closeTextBlock(controller);
     },
   });
 }

@@ -47,6 +47,8 @@ export interface ActionBinding {
   onSuccess?: ActionOnSuccess;
   /** Handler after failed execution */
   onError?: ActionOnError;
+  /** Whether to prevent default browser behavior (e.g. navigation on links) */
+  preventDefault?: boolean;
 }
 
 /**
@@ -91,6 +93,7 @@ export const ActionBindingSchema = z.object({
   confirm: ActionConfirmSchema.optional(),
   onSuccess: ActionOnSuccessSchema.optional(),
   onError: ActionOnErrorSchema.optional(),
+  preventDefault: z.boolean().optional(),
 });
 
 /**

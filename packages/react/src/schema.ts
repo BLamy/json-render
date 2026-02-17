@@ -51,6 +51,23 @@ export const schema = defineSchema(
     }),
   }),
   {
+    builtInActions: [
+      {
+        name: "setState",
+        description:
+          "Update a value in the state model at the given statePath. Params: { statePath: string, value: any }",
+      },
+      {
+        name: "pushState",
+        description:
+          'Append an item to an array in state. Params: { statePath: string, value: any, clearStatePath?: string }. Value can contain {"$state":"/path"} refs and "$id" for auto IDs.',
+      },
+      {
+        name: "removeState",
+        description:
+          "Remove an item from an array in state by index. Params: { statePath: string, index: number }",
+      },
+    ],
     defaultRules: [
       // Element integrity
       "CRITICAL INTEGRITY CHECK: Before outputting ANY element that references children, you MUST have already output (or will output) each child as its own element. If an element has children: ['a', 'b'], then elements 'a' and 'b' MUST exist. A missing child element causes that entire branch of the UI to be invisible.",

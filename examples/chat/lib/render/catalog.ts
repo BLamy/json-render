@@ -1,5 +1,6 @@
 import { defineCatalog } from "@json-render/core";
 import { schema } from "@json-render/react/schema";
+import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
 import { z } from "zod";
 
 // =============================================================================
@@ -45,48 +46,19 @@ const mesh3DProps = {
  */
 export const explorerCatalog = defineCatalog(schema, {
   components: {
-    // Layout
-    Stack: {
-      props: z.object({
-        direction: z.enum(["horizontal", "vertical"]).nullable(),
-        gap: z.enum(["sm", "md", "lg"]).nullable(),
-        wrap: z.boolean().nullable(),
-      }),
-      slots: ["default"],
-      description: "Flex layout container",
-      example: { direction: "vertical", gap: "md", wrap: null },
-    },
+    // From @json-render/shadcn (used as-is)
+    Stack: shadcnComponentDefinitions.Stack,
+    Card: shadcnComponentDefinitions.Card,
+    Grid: shadcnComponentDefinitions.Grid,
+    Heading: shadcnComponentDefinitions.Heading,
+    Separator: shadcnComponentDefinitions.Separator,
+    Accordion: shadcnComponentDefinitions.Accordion,
+    Progress: shadcnComponentDefinitions.Progress,
+    Skeleton: shadcnComponentDefinitions.Skeleton,
+    Badge: shadcnComponentDefinitions.Badge,
+    Alert: shadcnComponentDefinitions.Alert,
 
-    Card: {
-      props: z.object({
-        title: z.string().nullable(),
-        description: z.string().nullable(),
-      }),
-      slots: ["default"],
-      description: "Card container with optional title and description",
-      example: { title: "Weather", description: "Current conditions" },
-    },
-
-    Grid: {
-      props: z.object({
-        columns: z.enum(["1", "2", "3", "4"]).nullable(),
-        gap: z.enum(["sm", "md", "lg"]).nullable(),
-      }),
-      slots: ["default"],
-      description: "Responsive grid layout container",
-      example: { columns: "3", gap: "md" },
-    },
-
-    // Typography
-    Heading: {
-      props: z.object({
-        text: z.string(),
-        level: z.enum(["h1", "h2", "h3", "h4"]).nullable(),
-      }),
-      description: "Section heading",
-      example: { text: "Data Explorer", level: "h1" },
-    },
-
+    // Chat-specific components (different schemas or fully custom)
     Text: {
       props: z.object({
         content: z.string(),
@@ -94,32 +66,6 @@ export const explorerCatalog = defineCatalog(schema, {
       }),
       description: "Text content",
       example: { content: "Here is your data overview." },
-    },
-
-    // Data display
-    Badge: {
-      props: z.object({
-        text: z.string(),
-        variant: z
-          .enum(["default", "secondary", "destructive", "outline"])
-          .nullable(),
-      }),
-      description: "Status badge",
-      example: { text: "Live", variant: "default" },
-    },
-
-    Alert: {
-      props: z.object({
-        variant: z.enum(["default", "destructive"]).nullable(),
-        title: z.string(),
-        description: z.string().nullable(),
-      }),
-      description: "Alert or info message",
-    },
-
-    Separator: {
-      props: z.object({}),
-      description: "Visual divider",
     },
 
     Metric: {
@@ -222,22 +168,6 @@ export const explorerCatalog = defineCatalog(schema, {
       description: "Content for a specific tab",
     },
 
-    Progress: {
-      props: z.object({
-        value: z.number(),
-        max: z.number().nullable(),
-      }),
-      description: "Progress bar",
-    },
-
-    Skeleton: {
-      props: z.object({
-        width: z.string().nullable(),
-        height: z.string().nullable(),
-      }),
-      description: "Loading placeholder",
-    },
-
     // Educational / Rich content
     Callout: {
       props: z.object({
@@ -251,24 +181,6 @@ export const explorerCatalog = defineCatalog(schema, {
         type: "tip",
         title: "Did you know?",
         content: "The sun is about 93 million miles from Earth.",
-      },
-    },
-
-    Accordion: {
-      props: z.object({
-        items: z.array(
-          z.object({
-            title: z.string(),
-            content: z.string(),
-          }),
-        ),
-        type: z.enum(["single", "multiple"]).nullable(),
-      }),
-      description:
-        "Collapsible accordion sections for organizing detailed content",
-      example: {
-        items: [{ title: "Overview", content: "A brief introduction." }],
-        type: "multiple",
       },
     },
 

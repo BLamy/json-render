@@ -1022,6 +1022,104 @@ describe("createJsonRenderTransform", () => {
     const specChunks = chunks.filter((c) => c.type === SPEC_DATA_PART_TYPE);
     expect(specChunks.length).toBe(1);
   });
+
+  // ===========================================================================
+  // Text block splitting around spec data
+  // ===========================================================================
+
+  it("splits text blocks around spec data (text-start/text-end pairs)", async () => {
+    const input = [
+      "Some text\n",
+      '{"op":"add","path":"/root","value":"r"}\n',
+      "More text\n",
+    ].join("");
+
+    const chunks = await transformText(input);
+
+    const textStarts = chunks.filter((c) => c.type === "text-start");
+    const textEnds = chunks.filter((c) => c.type === "text-end");
+
+    // There should be two text blocks: one before the patch and one after
+    expect(textStarts.length).toBe(2);
+    expect(textEnds.length).toBe(2);
+
+    // Spec data should appear between the two text blocks
+    const specChunks = chunks.filter((c) => c.type === SPEC_DATA_PART_TYPE);
+    expect(specChunks.length).toBe(1);
+
+    // Find the indices of the first text-end and the spec chunk
+    const firstTextEndIdx = chunks.findIndex((c) => c.type === "text-end");
+    const specIdx = chunks.findIndex((c) => c.type === SPEC_DATA_PART_TYPE);
+    const secondTextStartIdx = chunks.findIndex(
+      (c, i) => i > specIdx && c.type === "text-start",
+    );
+    expect(firstTextEndIdx).toBeLessThan(specIdx);
+    expect(specIdx).toBeLessThan(secondTextStartIdx);
+  });
+
+  it("flush closes an open text block when stream ends without text-end", async () => {
+    const transform = createJsonRenderTransform();
+    const writer = transform.writable.getWriter();
+    const reader = transform.readable.getReader();
+
+    const chunks: StreamChunk[] = [];
+    const readAll = (async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+    })();
+
+    // Write text-start + text-delta, then close WITHOUT text-end
+    await writer.write({ type: "text-start", id: "t1" });
+    await writer.write({
+      type: "text-delta",
+      id: "t1",
+      delta: "Hello world\n",
+    });
+    await writer.close();
+
+    await readAll;
+
+    // The transform's flush should have emitted a text-end to close the block
+    const textEnds = chunks.filter((c) => c.type === "text-end");
+    expect(textEnds.length).toBe(1);
+
+    // Text content should still be present
+    const textChunks = chunks.filter((c) => c.type === "text-delta");
+    const text = textChunks.map((c) => (c as { delta: string }).delta).join("");
+    expect(text).toContain("Hello world");
+  });
+
+  it("consecutive patches do not produce empty text blocks", async () => {
+    const input = [
+      '{"op":"add","path":"/root","value":"r"}\n',
+      '{"op":"add","path":"/elements/r","value":{"type":"Card","props":{},"children":[]}}\n',
+    ].join("");
+
+    const chunks = await transformText(input);
+
+    const specChunks = chunks.filter((c) => c.type === SPEC_DATA_PART_TYPE);
+    expect(specChunks.length).toBe(2);
+
+    // There should be no text-start/text-end pairs between the two spec chunks
+    // (the initial text-start from the upstream is forwarded, but no new empty ones)
+    const textDeltas = chunks.filter((c) => c.type === "text-delta");
+    const textContent = textDeltas
+      .map((c) => (c as { delta: string }).delta)
+      .join("")
+      .trim();
+    // No meaningful text content between the patches
+    expect(textContent).toBe("");
+
+    // Count text blocks: there should be at most 1 (the initial upstream one),
+    // not extra empty ones inserted between patches
+    const textStarts = chunks.filter((c) => c.type === "text-start");
+    const textEnds = chunks.filter((c) => c.type === "text-end");
+    expect(textStarts.length).toBeLessThanOrEqual(1);
+    expect(textEnds.length).toBeLessThanOrEqual(1);
+  });
 });
 
 // =============================================================================

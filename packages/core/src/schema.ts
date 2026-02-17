@@ -66,6 +66,8 @@ export interface Schema<TDef extends SchemaDefinition = SchemaDefinition> {
   readonly promptTemplate?: PromptTemplate;
   /** Default rules baked into the schema (injected before customRules) */
   readonly defaultRules?: string[];
+  /** Built-in actions always available at runtime (injected into prompts automatically) */
+  readonly builtInActions?: BuiltInAction[];
   /** Create a catalog from this schema */
   createCatalog<TCatalog extends InferCatalogInput<TDef["catalog"]>>(
     catalog: TCatalog,
@@ -141,6 +143,18 @@ export type PromptTemplate<TCatalog = unknown> = (
 ) => string;
 
 /**
+ * A built-in action that is always available regardless of catalog configuration.
+ * These are handled by the runtime (e.g. ActionProvider) and injected into prompts
+ * automatically so the LLM knows about them.
+ */
+export interface BuiltInAction {
+  /** Action name (e.g. "setState") */
+  name: string;
+  /** Human-readable description for the LLM */
+  description: string;
+}
+
+/**
  * Schema options
  */
 export interface SchemaOptions<TCatalog = unknown> {
@@ -148,6 +162,13 @@ export interface SchemaOptions<TCatalog = unknown> {
   promptTemplate?: PromptTemplate<TCatalog>;
   /** Default rules baked into the schema (injected before customRules in prompts) */
   defaultRules?: string[];
+  /**
+   * Built-in actions that are always available regardless of catalog configuration.
+   * These are injected into prompts automatically so the LLM knows about them,
+   * but they don't require handlers in defineRegistry because the runtime
+   * (e.g. ActionProvider) handles them directly.
+   */
+  builtInActions?: BuiltInAction[];
 }
 
 /**
@@ -347,6 +368,7 @@ export function defineSchema<TDef extends SchemaDefinition>(
     definition,
     promptTemplate: options?.promptTemplate,
     defaultRules: options?.defaultRules,
+    builtInActions: options?.builtInActions,
     createCatalog<TCatalog extends InferCatalogInput<TDef["catalog"]>>(
       catalog: TCatalog,
     ): Catalog<TDef, TCatalog> {
@@ -749,12 +771,26 @@ Note: state patches appear right after the elements that use them, so the UI fil
     | Record<string, { params?: z.ZodType; description?: string }>
     | undefined;
 
-  if (actions && catalog.actionNames.length > 0) {
+  const builtInActions = catalog.schema.builtInActions ?? [];
+  const hasCustomActions = actions && catalog.actionNames.length > 0;
+  const hasBuiltInActions = builtInActions.length > 0;
+
+  if (hasCustomActions || hasBuiltInActions) {
     lines.push("AVAILABLE ACTIONS:");
     lines.push("");
-    for (const [name, def] of Object.entries(actions)) {
-      lines.push(`- ${name}${def.description ? `: ${def.description}` : ""}`);
+
+    // Built-in actions (handled by runtime, always available)
+    for (const action of builtInActions) {
+      lines.push(`- ${action.name}: ${action.description} [built-in]`);
     }
+
+    // Custom actions (declared in catalog, require handlers)
+    if (hasCustomActions) {
+      for (const [name, def] of Object.entries(actions)) {
+        lines.push(`- ${name}${def.description ? `: ${def.description}` : ""}`);
+      }
+    }
+
     lines.push("");
   }
 

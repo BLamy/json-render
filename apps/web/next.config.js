@@ -22,4 +22,6 @@ const nextConfig = {
 
 const withMDX = createMDX({});
 
-export default withMDX(nextConfig);
+/** @type {import('next').NextConfig} */
+const config = withMDX(nextConfig);
+export default config;

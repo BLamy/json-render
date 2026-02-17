@@ -143,6 +143,7 @@ export type {
   Schema,
   PromptTemplate,
   SchemaOptions,
+  BuiltInAction,
 } from "./schema";
 
 export { defineSchema } from "./schema";

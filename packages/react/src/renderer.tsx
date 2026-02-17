@@ -29,6 +29,8 @@ import type {
   ActionFn,
   SetState,
   StateModel,
+  CatalogHasActions,
+  EventHandle,
 } from "./catalog-types";
 import { useIsVisible, useVisibility } from "./contexts/visibility";
 import { useActions } from "./contexts/actions";
@@ -50,6 +52,8 @@ export interface ComponentRenderProps<P = Record<string, unknown>> {
   children?: ReactNode;
   /** Emit a named event. The renderer resolves the event to action binding(s) from the element's `on` field. Always provided by the renderer. */
   emit: (event: string) => void;
+  /** Get an event handle with metadata (shouldPreventDefault, bound). Use when you need to inspect event bindings. */
+  on: (event: string) => EventHandle;
   /**
    * Two-way binding paths resolved from `$bindState` / `$bindItem` expressions.
    * Maps prop name → absolute state path for write-back.
@@ -199,6 +203,24 @@ const ElementRenderer = React.memo(function ElementRenderer({
     [onBindings, execute, fullCtx],
   );
 
+  // Create on() function that returns an EventHandle with metadata for a specific event.
+  const on = useCallback(
+    (eventName: string): EventHandle => {
+      const binding = onBindings?.[eventName];
+      if (!binding) {
+        return { emit: () => {}, shouldPreventDefault: false, bound: false };
+      }
+      const actionBindings = Array.isArray(binding) ? binding : [binding];
+      const shouldPreventDefault = actionBindings.some((b) => b.preventDefault);
+      return {
+        emit: () => emit(eventName),
+        shouldPreventDefault,
+        bound: true,
+      };
+    },
+    [onBindings, emit],
+  );
+
   // Don't render if not visible
   if (!isVisible) {
     return null;
@@ -262,6 +284,7 @@ const ElementRenderer = React.memo(function ElementRenderer({
       <Component
         element={resolvedElement}
         emit={emit}
+        on={on}
         bindings={elementBindings}
         loading={loading}
       >
@@ -467,11 +490,25 @@ export interface DefineRegistryResult {
 }
 
 /**
+ * Options for defineRegistry.
+ *
+ * When the catalog declares actions, the `actions` field is required.
+ * When the catalog has no actions (or `actions: {}`), the field is optional.
+ */
+type DefineRegistryOptions<C extends Catalog> = {
+  components?: Components<C>;
+} & (CatalogHasActions<C> extends true
+  ? { actions: Actions<C> }
+  : { actions?: Actions<C> });
+
+/**
  * Create a registry from a catalog with components and/or actions.
+ *
+ * When the catalog declares actions, the `actions` field is required.
  *
  * @example
  * ```tsx
- * // Components only
+ * // Components only (catalog has no actions)
  * const { registry } = defineRegistry(catalog, {
  *   components: {
  *     Card: ({ props, children }) => (
@@ -480,14 +517,7 @@ export interface DefineRegistryResult {
  *   },
  * });
  *
- * // Actions only
- * const { handlers, executeAction } = defineRegistry(catalog, {
- *   actions: {
- *     viewCustomers: async (params, setState) => { ... },
- *   },
- * });
- *
- * // Both
+ * // Both (catalog declares actions)
  * const { registry, handlers, executeAction } = defineRegistry(catalog, {
  *   components: { ... },
  *   actions: { ... },
@@ -496,10 +526,7 @@ export interface DefineRegistryResult {
  */
 export function defineRegistry<C extends Catalog>(
   _catalog: C,
-  options: {
-    components?: Components<C>;
-    actions?: Actions<C>;
-  },
+  options: DefineRegistryOptions<C>,
 ): DefineRegistryResult {
   // Build component registry
   const registry: ComponentRegistry = {};
@@ -509,6 +536,7 @@ export function defineRegistry<C extends Catalog>(
         element,
         children,
         emit,
+        on,
         bindings,
         loading,
       }: ComponentRenderProps) => {
@@ -516,6 +544,7 @@ export function defineRegistry<C extends Catalog>(
           props: element.props,
           children,
           emit,
+          on,
           bindings,
           loading,
         });
@@ -572,6 +601,7 @@ type DefineRegistryComponentFn = (ctx: {
   props: unknown;
   children?: React.ReactNode;
   emit: (event: string) => void;
+  on: (event: string) => EventHandle;
   bindings?: Record<string, string>;
   loading?: boolean;
 }) => React.ReactNode;

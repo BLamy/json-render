@@ -2,6 +2,7 @@
 
 import { useState, useRef, type ReactNode } from "react";
 import { useBoundProp, defineRegistry } from "@json-render/react";
+import { shadcnComponents } from "@json-render/shadcn";
 import {
   Bar,
   BarChart as RechartsBarChart,
@@ -21,16 +22,6 @@ import {
 } from "@/components/ui/chart";
 
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import {
   Table,
   TableHeader,
   TableBody,
@@ -39,14 +30,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Accordion as AccordionRoot,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -218,76 +201,24 @@ function AnimatedGroup({
 
 export const { registry, handlers } = defineRegistry(explorerCatalog, {
   components: {
-    Stack: ({ props, children }) => {
-      const gapClass =
-        { sm: "gap-2", md: "gap-4", lg: "gap-6" }[props.gap ?? "md"] ?? "gap-4";
-      return (
-        <div
-          className={`flex ${props.direction === "horizontal" ? "flex-row" : "flex-col"} ${props.wrap ? "flex-wrap" : ""} ${gapClass}`}
-        >
-          {children}
-        </div>
-      );
-    },
+    // From @json-render/shadcn (used as-is)
+    Stack: shadcnComponents.Stack,
+    Card: shadcnComponents.Card,
+    Grid: shadcnComponents.Grid,
+    Heading: shadcnComponents.Heading,
+    Separator: shadcnComponents.Separator,
+    Accordion: shadcnComponents.Accordion,
+    Progress: shadcnComponents.Progress,
+    Skeleton: shadcnComponents.Skeleton,
+    Badge: shadcnComponents.Badge,
+    Alert: shadcnComponents.Alert,
 
-    Card: ({ props, children }) => (
-      <Card>
-        {(props.title || props.description) && (
-          <CardHeader>
-            {props.title && <CardTitle>{props.title}</CardTitle>}
-            {props.description && (
-              <CardDescription>{props.description}</CardDescription>
-            )}
-          </CardHeader>
-        )}
-        <CardContent className="flex flex-col gap-4">{children}</CardContent>
-      </Card>
-    ),
-
-    Grid: ({ props, children }) => {
-      const colsClass =
-        {
-          "1": "grid-cols-1",
-          "2": "grid-cols-1 md:grid-cols-2",
-          "3": "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
-          "4": "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
-        }[props.columns ?? "3"] ?? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
-      const gapClass =
-        { sm: "gap-2", md: "gap-4", lg: "gap-6" }[props.gap ?? "md"] ?? "gap-4";
-      return <div className={`grid ${colsClass} ${gapClass}`}>{children}</div>;
-    },
-
-    Heading: ({ props }) => {
-      const Tag = (props.level ?? "h2") as "h1" | "h2" | "h3" | "h4";
-      const sizeClass = {
-        h1: "text-3xl font-bold tracking-tight",
-        h2: "text-2xl font-semibold tracking-tight",
-        h3: "text-xl font-semibold",
-        h4: "text-lg font-medium",
-      }[props.level ?? "h2"];
-      return <Tag className={sizeClass}>{props.text}</Tag>;
-    },
-
+    // Chat-specific components
     Text: ({ props }) => (
       <p className={props.muted ? "text-muted-foreground" : ""}>
         {props.content}
       </p>
     ),
-
-    Badge: ({ props }) => (
-      <Badge variant={props.variant ?? "default"}>{props.text}</Badge>
-    ),
-
-    Alert: ({ props }) => (
-      <Alert variant={props.variant ?? "default"}>
-        <AlertTitle>{props.title}</AlertTitle>
-        {props.description ? (
-          <AlertDescription>{props.description}</AlertDescription>
-        ) : null}
-      </Alert>
-    ),
-
-    Separator: () => <Separator />,
 
     Metric: ({ props }) => {
       const TrendIcon =
@@ -566,16 +497,6 @@ export const { registry, handlers } = defineRegistry(explorerCatalog, {
       <TabsContent value={props.value}>{children}</TabsContent>
     ),
 
-    Progress: ({ props }) => (
-      <Progress value={props.value} max={props.max ?? 100} />
-    ),
-
-    Skeleton: ({ props }) => (
-      <Skeleton
-        className={`${props.width ?? "w-full"} ${props.height ?? "h-4"}`}
-      />
-    ),
-
     Callout: ({ props }) => {
       const config = {
         info: {
@@ -625,23 +546,6 @@ export const { registry, handlers } = defineRegistry(explorerCatalog, {
         </div>
       );
     },
-
-    Accordion: ({ props }) => (
-      <AccordionRoot
-        type={props.type === "single" ? "single" : "multiple"}
-        collapsible={props.type === "single" ? true : undefined}
-        className="w-full"
-      >
-        {(props.items ?? []).map((item, i) => (
-          <AccordionItem key={i} value={`item-${i}`}>
-            <AccordionTrigger>{item.title}</AccordionTrigger>
-            <AccordionContent>
-              <p className="text-muted-foreground">{item.content}</p>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </AccordionRoot>
-    ),
 
     Timeline: ({ props }) => (
       <div className="relative pl-8">
@@ -987,8 +891,6 @@ export const { registry, handlers } = defineRegistry(explorerCatalog, {
       </DreiText>
     ),
   },
-
-  actions: {},
 });
 
 // =============================================================================
