@@ -1,5 +1,12 @@
 # @json-render/react-native
 
+## 0.8.0
+
+### Patch Changes
+
+- Updated dependencies [09376db]
+  - @json-render/core@0.8.0
+
 ## 0.7.0
 
 ### Patch Changes
